@@ -1,0 +1,65 @@
+cabal-version:       2.0
+name:                remotely
+version:             0.0.0
+synopsis:            run a structured protocol over a persistent ssh connection
+description:         run a structured protocol over a persistent ssh connection
+homepage:            https://github.com/mwotton/remotely
+bug-reports:         https://github.com/mwotton/remotely/issues
+license:             BSD3
+license-file:        LICENSE
+author:              Mark Wotton
+maintainer:          mwotton@gmail.com
+copyright:           2020 Mark Wotton
+category:            Network
+build-type:          Simple
+extra-doc-files:     README.md
+                   , CHANGELOG.md
+tested-with:         GHC == 8.4.4, GHC == 8.6.3, GHC == 8.6.4
+
+source-repository head
+  type:                git
+  location:            https://github.com/mwotton/remotely.git
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Remotely
+                       
+
+  build-depends:       base >= 4.11.1.0 && < 4.13
+                     
+
+  ghc-options:         -Wall
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wcompat
+                       -Widentities
+                       -Wredundant-constraints
+                       -fhide-source-paths
+                       -Wmissing-export-lists
+                       -Wpartial-fields
+
+  default-language:    Haskell2010
+
+test-suite remotely-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+
+  build-depends:       base >= 4.11.1.0 && < 4.13
+                     , remotely
+                     
+
+  ghc-options:         -Wall
+                       -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wcompat
+                       -Widentities
+                       -Wredundant-constraints
+                       -fhide-source-paths
+                       -Wmissing-export-lists
+                       -Wpartial-fields
+
+  default-language:    Haskell2010
