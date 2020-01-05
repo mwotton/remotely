@@ -64,3 +64,6 @@ packages:
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+extra-deps:
+- store-streaming-0.2.0.0@sha256:f1194a9276362691f2ccc92473f4ebc9e7f7e57131e8f7c20c7c2e4eb264eb70,2006
