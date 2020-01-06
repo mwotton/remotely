@@ -14,7 +14,7 @@ main = do
   print ("finally", r)
 
 printOut :: Int -> IO Status
-printOut x = print ("printout called" <> show x) >> pure NotDone
+printOut x = print ("printout called: " <> show x) >> pure Done
 
 maybeGetline :: IO (Maybe Int)
 maybeGetline = do
