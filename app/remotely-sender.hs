@@ -11,15 +11,14 @@ main :: IO ()
 main = do
   [hostname,path] <- getArgs
   (r ::Either RemoteError ()) <- remotely hostname path (printOut, maybeGetline)
-  print ("finally", r)
+  pure ()
 
-printOut :: Int -> IO Status
+printOut :: String -> IO Status
 printOut x = print ("printout called: " <> show x) >> pure Done
 
-maybeGetline :: IO (Maybe Int)
+maybeGetline :: IO (Maybe String)
 maybeGetline = do
-  putStrLn "waiting for input"
   x <- try getLine
   case x of
-    Left (_ :: IOError) -> print "ending input" >> pure Nothing
-    Right r -> print ("got " <> show r) >> pure (readMaybe r)
+    Left (_ :: IOError) -> pure Nothing
+    Right r -> pure (Just r)

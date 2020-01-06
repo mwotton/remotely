@@ -38,7 +38,7 @@ instance Exception RemoteError
 
 type Hostname = String
 
-remotely :: forall m a b . (Store a, Store b, Show a, Show b, MonadIO m, MonadUnliftIO m, MonadBaseControl IO m)
+remotely :: forall m a b . (Store a, Store b, MonadIO m, MonadUnliftIO m, MonadBaseControl IO m)
          => Hostname -> FilePath
          -> (a -> m Status, m (Maybe b))
          -> m (Either RemoteError ())
@@ -66,19 +66,14 @@ remotely hostname remotePath (sendFunc,receiveFunc) = do
 
     watch name = mapMC (\x -> trace (name <> ": " <> show x) (pure x))
     receiveLoop h = do
-      traceM "router recv loop"
       r <- try $ runConduitRes (sourceHandle h
-        .| watch "recv loop"
         .| conduitDecode Nothing
-        .| watch "recv loop2"
         .| sink)
-      traceM "router recv loop end"
       pure r
+
     sink :: ConduitM (Message a) Void (ResourceT m) ()
     sink = do
-      traceM "sink!"
       await >>=  maybe (pure ()) (\(Message m') -> do
-        traceM ("sinkloop: " <> show (Message m'))
         lift (lift $ sendFunc m') >>= \case
           Done -> pure ()
           NotDone -> sink)
@@ -87,14 +82,11 @@ remotely hostname remotePath (sendFunc,receiveFunc) = do
     sendLoop h = do
       r <- try $ runConduit
         (source
-          .| mapMC (\x -> trace ("sender1: " <> show x) (pure x))
           .| conduitEncode
-          .| mapMC (\x -> trace ("sender2: " <> show x) (pure x))
           .| sinkHandle h)
       trace "finishing sendloop" (pure r)
     source = maybe (pure ()) (\x -> do
                                  yield (Message x)
-                                 traceM ("sourceloop: " <> show (Message x))
                                  )
         =<< lift receiveFunc
 
@@ -106,17 +98,11 @@ receiver :: forall a b m .
          -> Handle
          -> m ()
 receiver f hin hout = do
-  trace "starting receiver" (pure ())
   liftIO $ hSetBuffering hin NoBuffering
   liftIO $ hSetBuffering hout NoBuffering
   runConduitRes
     $ sourceHandle hin
-    .| mapMC (\x -> trace ("decoder1: " <> show x) (pure x))
     .| conduitDecode Nothing
-    .| mapMC (\x -> trace ("decoder2: " <> show x) (pure x))
     .| mapMC (lift . fmap Message . f . fromMessage)
-    .| mapMC (\x -> trace ("decoder3: " <> show x) (pure x))
     .| conduitEncode
-    .| mapMC (\x -> trace ("decoder4: " <> show x) (pure x))
     .| sinkHandle hout
-  traceM "receiver done"
