@@ -15,7 +15,6 @@ import Control.Monad.IO.Class(MonadIO, liftIO)
 import GHC.Generics(Generic)
 import Control.Concurrent.Async.Lifted(concurrently)
 import System.Process(CreateProcess(..),proc,StdStream(..), createProcess)
-import Debug.Trace
 import Data.Maybe(fromMaybe)
 import Control.Monad.Trans.Control(MonadBaseControl)
 import System.IO
@@ -64,35 +63,28 @@ remotely hostname remotePath (sendFunc,receiveFunc) = do
     inspect (_ ,Left x) = Left x
     inspect _  = Right ()
 
-    watch name = mapMC (\x -> trace (name <> ": " <> show x) (pure x))
-    receiveLoop h = do
-      r <- try $ runConduitRes (sourceHandle h
-        .| conduitDecode Nothing
-        .| sink)
-      pure r
+-- useful debugging function
+--     watch name = mapMC (\x -> trace (name <> ": " <> show x) (pure x))
+
+    receiveLoop h = try $ runConduitRes
+      $ sourceHandle h.| conduitDecode Nothing .| sink
 
     sink :: ConduitM (Message a) Void (ResourceT m) ()
-    sink = do
-      await >>=  maybe (pure ()) (\(Message m') -> do
+    sink = await >>=  maybe (pure ()) (\(Message m') ->
         lift (lift $ sendFunc m') >>= \case
           Done -> pure ()
           NotDone -> sink)
 
     sendLoop :: Handle -> m (Either RemoteError ())
-    sendLoop h = do
-      r <- try $ runConduit
-        (source
-          .| conduitEncode
-          .| sinkHandle h)
-      trace "finishing sendloop" (pure r)
-    source = maybe (pure ()) (\x -> do
-                                 yield (Message x)
-                                 )
-        =<< lift receiveFunc
+    sendLoop h = try $ runConduit $
+                 source .| conduitEncode .| sinkHandle h
+
+    source = maybe (pure ()) (yield . Message)
+             =<< lift receiveFunc
 
 -- TODO some way of quitting from outside (though maybe can just kill the thread?)
 receiver :: forall a b m .
-           (Show a, Show b, Store a, Store b, MonadIO m, MonadUnliftIO m)
+           (Store a, Store b, MonadIO m, MonadUnliftIO m)
          => (a -> m b)
          -> Handle
          -> Handle
